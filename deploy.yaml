@@ -1,0 +1,11 @@
+---
+- name: deploy site
+  hosts: all
+  remote_user: root
+
+  tasks:
+  - name: Copy website files to the server's document root
+    copy:
+      src: "/Users/boya/workplace/sites/proofo.zip"
+      dest: "/var/www/html"
+      mode: preserve
