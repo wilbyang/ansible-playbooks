@@ -1,0 +1,19 @@
+server {
+ listen       80;
+ root {{ root }};
+ server_name  {{ domain }} www.{{ domain }};
+ 
+ 	location / {
+		try_files $uri $uri @rewrite;
+	}
+	location @rewrite {
+        rewrite ^/(.*)$ /index.php?altum=$1;
+    }
+	location ~ \.php$ {
+		include snippets/fastcgi-php.conf;
+		fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+	}
+
+ 
+
+}

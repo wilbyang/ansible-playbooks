@@ -4,6 +4,14 @@
   remote_user: root
 
   tasks:
+  - name: Install Oh My Zsh
+    shell: sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    ignore_errors: yes
+  - name: Update apt package index
+    apt:
+      update_cache: yes
+      cache_valid_time: 360000
+
 
   - name: Installing Packages
     package:
@@ -14,12 +22,19 @@
       - mysql-server
       - php 
       - php-mysql
+      - php-gd
+      - php-dom
+      - php-zip
       - php-mbstring
       - php-curl
       - php-fpm
       - python3-pymysql
       - certbot
       - python3-certbot-nginx
+      - git
+      - zsh
+
+  
 
   - name: Set root password
     no_log: true
@@ -51,16 +66,28 @@
     with_items:
       - DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
       - FLUSH PRIVILEGES;
-  
-  - name: Configure Nginx
-    lineinfile:
-      path: /etc/apache2/mods-enabled/dir.conf
-      regexp: "^\tDirectoryIndex index.html index.cgi index.pl index.php index.xhtml index.htm$"
-      line: "\tDirectoryIndex index.php index.html index.cgi index.pl index.php index.xhtml index.htm"
-    notify: Restart Nginx
+  - name: Create a directory for the website files
+    file:
+      path: /var/www/libwy.ml
+      state: directory
+  - name: Create an index.php file for the website
+    copy:
+      content: |
+        <?php
+        echo "Hello, world!";
+      dest: /var/www/libwy.ml/index.php
+  - name: Create a configuration file for the website
+    template:
+      src: website.conf.j2
+      dest: /etc/nginx/sites-available/libwy.ml.conf
+    vars:
+      domain: libwy.ml
+      root: /var/www/libwy.ml
+  - name: Enable the website
+    file:
+      src: /etc/nginx/sites-available/libwy.ml.conf
+      dest: /etc/nginx/sites-enabled/libwy.ml.conf
+      state: link
 
-  handlers:
-      - name: Restart Nginx
-        service:
-          name: nginx
-          state: restarted
+  - name: Restart nginx
+    service: name=nginx state=restarted
