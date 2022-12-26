@@ -1,12 +1,11 @@
 ---
 - name: LAMP Setup
   hosts: all
-  remote_user: root
+  remote_user: ubuntu
+  become: true
 
   tasks:
-  - name: Install Oh My Zsh
-    shell: sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    ignore_errors: yes
+  
   - name: Update apt package index
     apt:
       update_cache: yes
@@ -35,6 +34,9 @@
       - zsh
 
   
+  - name: Install Oh My Zsh
+    shell: sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    ignore_errors: yes
 
   - name: Set root password
     no_log: true
@@ -68,26 +70,35 @@
       - FLUSH PRIVILEGES;
   - name: Create a directory for the website files
     file:
-      path: /var/www/libwy.ml
+      path: /var/www/libwy.site
       state: directory
   - name: Create an index.php file for the website
     copy:
       content: |
         <?php
         echo "Hello, world!";
-      dest: /var/www/libwy.ml/index.php
+      dest: /var/www/libwy.site/index.php
   - name: Create a configuration file for the website
     template:
       src: website.conf.j2
-      dest: /etc/nginx/sites-available/libwy.ml.conf
+      dest: /etc/nginx/sites-available/libwy.site.conf
     vars:
-      domain: libwy.ml
-      root: /var/www/libwy.ml
+      domain: libwy.site
+      root: /var/www/libwy.site
   - name: Enable the website
     file:
-      src: /etc/nginx/sites-available/libwy.ml.conf
-      dest: /etc/nginx/sites-enabled/libwy.ml.conf
+      src: /etc/nginx/sites-available/libwy.site.conf
+      dest: /etc/nginx/sites-enabled/libwy.site.conf
       state: link
+  - name: Obtaining an SSL Certificate from lets encrpt
+    expect:
+      command: certbot --nginx -d libwy.site -d www.libwy.site
+      responses:
+        Prompt1: yang.wilby@gmail.com
+        Prompt2: Y
+        Prompt3: Y
+        Prompt4: 2
+      echo: yes
 
   - name: Restart nginx
     service: name=nginx state=restarted
